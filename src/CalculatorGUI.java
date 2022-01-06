@@ -11,12 +11,9 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.ButtonGroup;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JTextField;
+import javax.swing.*;
+import javax.swing.border.Border;
+import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 
 public class CalculatorGUI extends JFrame {
@@ -24,8 +21,7 @@ public class CalculatorGUI extends JFrame {
     protected boolean calculateAsInt;
     protected Calculator calculator;
     protected BinaryOperator operator;
-    protected JTextField display, memoryDisplay;
-
+    protected JTextField display, expressionDisplay, memoryDisplay;
 
     public CalculatorGUI () {
         super("My Java Calculator");
@@ -37,13 +33,16 @@ public class CalculatorGUI extends JFrame {
     private void initGUI () {
         JPanel buttonPanel = new JPanel();
         JPanel typeOptionPanel = new JPanel();
+        JPanel displayPanel = new JPanel();
         setLayout(new BorderLayout());
-        buttonPanel.setLayout(new GridLayout(8, 5));
+        buttonPanel.setLayout(new GridLayout(9, 5));
+        displayPanel.setLayout(new GridLayout(2, 2));
 
         this.calculateAsInt = false;
+        this.expressionDisplay = new JTextField(20);
         this.display = new JTextField(20);
         this.memoryDisplay = new JTextField(5);
-
+        expressionDisplay.setText("Testing 123");
         // display.setEditable(false);
 
         JButton one = new JButton("1");
@@ -58,6 +57,8 @@ public class CalculatorGUI extends JFrame {
         JButton zero = new JButton("0");
         JButton plusMinus = new JButton("+/-");
         JButton point = new JButton(".");
+        JButton leftParenthesis = new JButton("(");
+        JButton rightParenthesis = new JButton(")");
 
         JButton memoryClear = new JButton("MC");
         JButton memoryRecall = new JButton("MR");
@@ -103,6 +104,8 @@ public class CalculatorGUI extends JFrame {
         nine.addActionListener(new ValueActionListener("9"));
         zero.addActionListener(new ValueActionListener("0"));
         point.addActionListener(new ValueActionListener("."));
+        leftParenthesis.addActionListener(new ValueActionListener("("));
+        rightParenthesis.addActionListener(new ValueActionListener(")"));
 
         memoryClear.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
@@ -251,6 +254,8 @@ public class CalculatorGUI extends JFrame {
         buttonPanel.add(plusMinus);
         buttonPanel.add(zero);
         buttonPanel.add(point);
+        buttonPanel.add(leftParenthesis);
+        buttonPanel.add(rightParenthesis);
         buttonPanel.add(multiply);
         buttonPanel.add(equals);
         buttonPanel.add(sin);
@@ -277,7 +282,13 @@ public class CalculatorGUI extends JFrame {
         typeOptionPanel.add(intType);
         typeOptionPanel.add(doubleType);
 
-        add(display, BorderLayout.NORTH);
+
+        displayPanel.setBorder(BorderFactory.createEtchedBorder());
+        displayPanel.add(expressionDisplay);
+        displayPanel.add(display);
+
+        add(displayPanel, BorderLayout.NORTH);
+        //add(display, BorderLayout.NORTH);
         add(buttonPanel, BorderLayout.CENTER);
         add(typeOptionPanel, BorderLayout.SOUTH);
 
