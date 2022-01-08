@@ -5,15 +5,11 @@
  */
 
 import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 
 public class CalculatorGUI extends JFrame {
@@ -42,7 +38,7 @@ public class CalculatorGUI extends JFrame {
         this.expressionDisplay = new JTextField(20);
         this.display = new JTextField(20);
         this.memoryDisplay = new JTextField(5);
-        expressionDisplay.setText("Testing 123");
+        //expressionDisplay.setText("Testing 123");
         // display.setEditable(false);
 
         JButton one = new JButton("1");
@@ -104,8 +100,8 @@ public class CalculatorGUI extends JFrame {
         nine.addActionListener(new ValueActionListener("9"));
         zero.addActionListener(new ValueActionListener("0"));
         point.addActionListener(new ValueActionListener("."));
-        leftParenthesis.addActionListener(new ValueActionListener("("));
-        rightParenthesis.addActionListener(new ValueActionListener(")"));
+        leftParenthesis.addActionListener(new expressionValueActionListener("("));
+        rightParenthesis.addActionListener(new expressionValueActionListener(")"));
 
         memoryClear.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
@@ -134,6 +130,7 @@ public class CalculatorGUI extends JFrame {
         clear.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
                 pushOperator(null);
+                setExpressionValue("");
             }
         });
 
@@ -208,6 +205,7 @@ public class CalculatorGUI extends JFrame {
                 operator.setOperandTwo(operandTwo);
                 String result = operator.compute();
                 setDisplayedValue(result);
+                pushToExpression(operandTwo + "=");
                 popOperator();
             }
         });
@@ -302,6 +300,11 @@ public class CalculatorGUI extends JFrame {
         return this.display.getText();
     }
 
+    protected String getExpressionValue () {
+        return this.expressionDisplay.getText();
+    }
+
+
     protected boolean getDisplayedBolean () {
         String displayText = getDisplayedValue();
         boolean displayValue;
@@ -340,6 +343,10 @@ public class CalculatorGUI extends JFrame {
         this.display.setText(value);
     }
 
+    protected void setExpressionValue (String value) {
+        this.expressionDisplay.setText(value);
+    }
+
     protected void setMemoryDisplay (String value) {
         this.memoryDisplay.setText(value);
     }
@@ -359,6 +366,18 @@ public class CalculatorGUI extends JFrame {
 
         newText += value;
         this.display.setText(newText);
+    }
+
+    protected void pushToExpression (String value) {
+        String newText = getExpressionValue();
+
+        /* Prevent leading zeros. */
+        if (newText == null) {
+            newText = "";
+        }
+
+        newText += value;
+        this.expressionDisplay.setText(newText);
     }
 
     protected void changeSign () {
@@ -394,6 +413,8 @@ public class CalculatorGUI extends JFrame {
         public void actionPerformed (ActionEvent ae) {
             String value = getDisplayedValue();
             operator.setOperand(value);
+            pushToExpression(value);
+            pushToExpression(this.operator.getSymbol());
             pushOperator(operator);
         }
     }
@@ -417,13 +438,27 @@ public class CalculatorGUI extends JFrame {
     abstract class UnaryOperator {
 
         protected String operand;
+        protected String symbol;
+
+        public UnaryOperator(String symbol) {
+            this.symbol = symbol;
+        }
 
         public abstract String compute ();
 
         public void setOperand (String operand) {	this.operand = operand; }
+
+        //protected void setSymbol (String symbol) {	this.symbol = symbol; }
+
+        public String getSymbol() {return symbol; }
     }
 
     abstract class NumericUnaryOperator extends UnaryOperator {
+
+        NumericUnaryOperator (String symbol) {
+            super(symbol);
+        }
+
         public String compute () {
             double doubleOperand = 0.0;
             try {
@@ -437,6 +472,11 @@ public class CalculatorGUI extends JFrame {
     }
 
     abstract class BooleanUnaryOperator extends UnaryOperator {
+
+        BooleanUnaryOperator (String symbol) {
+            super(symbol);
+        }
+
         public String compute () {
             boolean booleanOperand = false;
             try {
@@ -451,16 +491,21 @@ public class CalculatorGUI extends JFrame {
 
     abstract class BinaryOperator extends UnaryOperator {
 
-        protected String operandTwo;
-
-        public BinaryOperator () {
+        BinaryOperator (String symbol) {
+            super(symbol);
         }
+
+        protected String operandTwo;
 
         public void setOperandTwo (String operand) {	this.operandTwo = operand; }
 
     }
 
     abstract class BooleanBinaryOperator extends BinaryOperator {
+        BooleanBinaryOperator (String symbol) {
+            super(symbol);
+        }
+
         public String compute () {
             boolean booleanOperand = false;
             boolean booleanOperandTwo = false;
@@ -476,42 +521,71 @@ public class CalculatorGUI extends JFrame {
     }
 
     class NotOperator extends BooleanUnaryOperator {
+        NotOperator () {
+            super(" ! ");
+        }
+
         public String compute (boolean operand) {
             return calculator.not(operand) + "";
         }
     }
 
     class AndOperator extends BooleanBinaryOperator {
+        AndOperator() {
+            super(" && ");
+        }
+
         public String compute (boolean operandOne, boolean operandTwo) {
             return calculator.and(operandOne, operandTwo) + "";
         }
     }
 
     class OrOperator extends BooleanBinaryOperator {
+        OrOperator() {
+            super(" || ");
+        }
         public String compute (boolean operandOne, boolean operandTwo) {
             return calculator.or(operandOne, operandTwo) + "";
         }
     }
 
     class NandOperator extends BooleanBinaryOperator {
+        NandOperator() {
+            super(" nand ");
+        }
+
         public String compute (boolean operandOne, boolean operandTwo) {
             return calculator.nand(operandOne, operandTwo) + "";
         }
     }
 
     class NorOperator extends BooleanBinaryOperator {
+
+        NorOperator() {
+            super(" nor ");
+        }
+
         public String compute (boolean operandOne, boolean operandTwo) {
             return calculator.nor(operandOne, operandTwo) + "";
         }
     }
 
     class XorOperator extends BooleanBinaryOperator {
+
+        XorOperator () {
+            super(" xor ");
+        }
         public String compute (boolean operandOne, boolean operandTwo) {
             return calculator.xor(operandOne, operandTwo) + "";
         }
     }
 
     abstract class NumericBinaryOperator extends BinaryOperator {
+
+        NumericBinaryOperator (String symbol) {
+            super(symbol);
+        }
+
         public String compute () {
             double doubleOperand = 0.0;
             double doubleOperandTwo = 0.0;
@@ -527,36 +601,58 @@ public class CalculatorGUI extends JFrame {
     }
 
     class SquareRootOperator extends NumericUnaryOperator {
+        SquareRootOperator () {
+            super((String.valueOf('\u221A')));
+        }
         public String compute (double operand) {
             return calculator.sqrt(operand) + "";
         }
     }
 
     class NaturalLogOperator extends NumericUnaryOperator {
+        NaturalLogOperator () {
+            super("ln");
+        }
         public String compute (double operand) {
             return calculator.ln(operand) + "";
         }
     }
 
     class CosineOperator extends NumericUnaryOperator {
+        CosineOperator () {
+            super("cos");
+        }
+
         public String compute (double operand) {
             return calculator.cos(operand) + "";
         }
     }
 
     class SineOperator extends NumericUnaryOperator {
+        SineOperator () {
+            super("sin");
+        }
+
         public String compute (double operand) {
             return calculator.sin(operand) + "";
         }
     }
 
     class TangentOperator extends NumericUnaryOperator {
+        TangentOperator () {
+            super("tan");
+        }
+
         public String compute (double operand) {
             return calculator.tan(operand) + "";
         }
     }
 
     class PlusOperator extends NumericBinaryOperator {
+        PlusOperator () {
+            super("+");
+        }
+
         public String compute (double operand, double operandTwo) {
             if (calculateAsInt) {
                 int sum = calculator.plus((int)operand, (int)operandTwo);	// Cast operands to ints to invoke plus(int, int)
@@ -567,6 +663,10 @@ public class CalculatorGUI extends JFrame {
     }
 
     class MinusOperator extends NumericBinaryOperator {
+        MinusOperator () {
+            super("-");
+        }
+
         public String compute (double operand, double operandTwo) {
             if (calculateAsInt) {
                 int difference = calculator.minus((int)operand, (int)operandTwo);
@@ -577,6 +677,10 @@ public class CalculatorGUI extends JFrame {
     }
 
     class DivideOperator extends NumericBinaryOperator {
+        DivideOperator () {
+            super("/");
+        }
+
         public String compute (double operandOne, double operandTwo) {
             if (calculateAsInt) {
                 int difference = calculator.divide((int)operandOne, (int)operandTwo);
@@ -587,6 +691,10 @@ public class CalculatorGUI extends JFrame {
     }
 
     class MultiplyOperator extends NumericBinaryOperator {
+        MultiplyOperator () {
+            super("*");
+        }
+
         public String compute (double operandOne, double operandTwo) {
             if (calculateAsInt) {
                 int product = calculator.multiply((int)operandOne, (int)operandTwo);
@@ -597,6 +705,10 @@ public class CalculatorGUI extends JFrame {
     }
 
     class ModulusOperator extends NumericBinaryOperator {
+        ModulusOperator () {
+            super("%");
+        }
+
         public String compute (double operandOne, double operandTwo) {
             return calculator.modulus((int)operandOne, (int)operandTwo)  + "";
         }
@@ -611,6 +723,18 @@ public class CalculatorGUI extends JFrame {
 
         public void actionPerformed (ActionEvent event) {
             pushValue(this.value);
+        }
+    }
+
+    class expressionValueActionListener implements ActionListener {
+        protected String value;
+
+        public expressionValueActionListener (String value) {
+            this.value = value;
+        }
+
+        public void actionPerformed (ActionEvent event) {
+            pushToExpression(this.value);
         }
     }
 }
