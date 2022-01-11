@@ -4,10 +4,15 @@
  * File: CalculatorGUI.java
  */
 
+import net.objecthunter.exp4j.Expression;
+import net.objecthunter.exp4j.ExpressionBuilder;
+
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -17,7 +22,14 @@ public class CalculatorGUI extends JFrame {
     protected boolean calculateAsInt;
     protected Calculator calculator;
     protected BinaryOperator operator;
+    protected BinaryOperator getBinaryOperator() { return this.operator;}
+
     protected JTextField display, expressionDisplay, memoryDisplay;
+
+    //The gui now keeps track of a unary operator, in addition to a binary operator
+    protected UnaryOperator curUnaryOperator;
+    protected UnaryOperator getCurUnaryOperator() { return this.curUnaryOperator;}
+    protected void setCurUnaryOperator(UnaryOperator uOp) {this.curUnaryOperator = uOp;}
 
     public CalculatorGUI () {
         super("My Java Calculator");
@@ -34,6 +46,7 @@ public class CalculatorGUI extends JFrame {
         buttonPanel.setLayout(new GridLayout(9, 5));
         displayPanel.setLayout(new GridLayout(2, 2));
 
+        Expression expression = new ExpressionBuilder("pi+sqrt(5)").build();
         this.calculateAsInt = false;
         this.expressionDisplay = new JTextField(20);
         this.display = new JTextField(20);
@@ -72,7 +85,7 @@ public class CalculatorGUI extends JFrame {
         JButton toFarenheit = new JButton("to F");
         JButton pi = new JButton("pi");
         JButton e = new JButton("e");
-        JButton naturalLog = new JButton("ln");
+        JButton naturalLog = new JButton("log"); //ln did not work with ExpressionBuilder
         JButton sin = new JButton("sin");
         JButton cos = new JButton("cos");
         JButton tan = new JButton("tan");
@@ -130,6 +143,7 @@ public class CalculatorGUI extends JFrame {
         clear.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
                 pushOperator(null);
+                setCurUnaryOperator(null);
                 setExpressionValue("");
             }
         });
@@ -161,6 +175,8 @@ public class CalculatorGUI extends JFrame {
         sin.addActionListener(new UnaryOperatorListener(new SineOperator()));
         tan.addActionListener(new UnaryOperatorListener(new TangentOperator()));
         squareRoot.addActionListener(new UnaryOperatorListener(new SquareRootOperator()));
+        //squareRoot.addActionListener(new expressionValueActionListener("sqrt("));
+
         naturalLog.addActionListener(new UnaryOperatorListener(new NaturalLogOperator()));
         /* Boolean */
         and.addActionListener(new OperatorListener(new AndOperator()));
@@ -184,29 +200,41 @@ public class CalculatorGUI extends JFrame {
 
         e.addActionListener(new ActionListener () {
             public void actionPerformed (ActionEvent ae) {
-                double pi = calculator.e();
-                setDisplayedValue(pi);
+                setDisplayedValue("e");
             }
         });
 
         pi.addActionListener(new ActionListener () {
             public void actionPerformed (ActionEvent ae) {
-                double e = calculator.pi();
-                setDisplayedValue(e);
+                setDisplayedValue("pi");
             }
         });
 
+        // this method is critical in the new version
+        // as the displayed expression can be parsed by analyzing
+        // whether an '=' is present in it
         equals.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
-                if (operator == null)
-                    return;
-
                 String operandTwo = getDisplayedValue();
-                operator.setOperandTwo(operandTwo);
-                String result = operator.compute();
-                setDisplayedValue(result);
-                pushToExpression(operandTwo + "=");
+
+                if (operator == null && curUnaryOperator == null) {
+                    if (operandTwo.equals("pi")) {
+                        setDisplayedValue(calculator.pi());
+                    } else if (operandTwo.equals("e")) {
+                        setDisplayedValue(calculator.e());
+                    } else if (operandTwo.equals(null)){
+                        return;
+                    }
+                }
+
+                pushToExpression(operandTwo);
+                Expression expression = new ExpressionBuilder(getExpressionValue()).build();
+                double res = expression.evaluate();
+                pushToExpression("=");
+                setDisplayedValue(res);
                 popOperator();
+                setCurUnaryOperator(null);
+                //pushToExpression(operandTwo);
             }
         });
 
@@ -222,6 +250,7 @@ public class CalculatorGUI extends JFrame {
             }
         });
 
+        // it worked out really well that this is not a UnaryOperator!!
         plusMinus.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
                 changeSign();
@@ -294,6 +323,7 @@ public class CalculatorGUI extends JFrame {
         setSize(350, 350);
         setVisible(true);
         setResizable(false);
+
     }
 
     protected String getDisplayedValue () {
@@ -354,6 +384,10 @@ public class CalculatorGUI extends JFrame {
     protected void pushValue (String value) {
         String newText = getDisplayedValue();
 
+        if(newText.contains("=")) {
+            newText = "";
+        }
+
         /* Prevent leading zeros. */
         if (newText != null && newText.length() > 0) {
             if (newText.charAt(0) == '0' || newText.equals("0.0"))
@@ -364,16 +398,24 @@ public class CalculatorGUI extends JFrame {
         if (value.equals(".") && newText.contains("."))
             return;
 
+
         newText += value;
-        this.display.setText(newText);
+        if (this.curUnaryOperator == null) {
+            this.display.setText(newText);
+        } else { // here we push the value directly to the expression display!
+            // otherwise what will happen? check it out
+            this.display.setText("");
+            pushToExpression(value);
+        }
     }
 
     protected void pushToExpression (String value) {
         String newText = getExpressionValue();
 
         /* Prevent leading zeros. */
-        if (newText == null) {
+        if (newText == null || newText.contains("=")) { // if newText has an equal then we need to restart the expression!!!
             newText = "";
+            setExpressionValue("");
         }
 
         newText += value;
@@ -381,9 +423,11 @@ public class CalculatorGUI extends JFrame {
     }
 
     protected void changeSign () {
-        double value = getDisplayedDouble();
-        value = calculator.negate(value);
-        setDisplayedValue(value);
+        if(this.curUnaryOperator == null) {
+            double value = getDisplayedDouble();
+            value = calculator.negate(value);
+            setDisplayedValue(value);
+        }
     }
 
     protected void popOperator () {
@@ -411,11 +455,23 @@ public class CalculatorGUI extends JFrame {
         }
 
         public void actionPerformed (ActionEvent ae) {
+//            if(getBinaryOperator() == null && getCurUnaryOperator() == null) { //this is the condition after you use equals
+//                setExpressionValue("");
+//                pushToExpression(getDisplayedValue()+this.operator.getSymbol());
+//                setDisplayedValue(0);
+//            } else if (getBinaryOperator() == null) {
+//                pushToExpression(getDisplayedValue()+this.operator.getSymbol());
+//                setDisplayedValue(0);
+//            } else {
             String value = getDisplayedValue();
+            if (getExpressionValue().contains("=")) {
+                setExpressionValue("");
+            }
             operator.setOperand(value);
             pushToExpression(value);
             pushToExpression(this.operator.getSymbol());
             pushOperator(operator);
+//            }
         }
     }
 
@@ -428,10 +484,27 @@ public class CalculatorGUI extends JFrame {
         }
 
         public void actionPerformed (ActionEvent ae) {
-            String value = getDisplayedValue();
-            operator.setOperand(value);
-            String result = operator.compute();
-            setDisplayedValue(result);
+            // I needed to add the getBinaryOperator method because it was getting confused with the "opertor" variable
+            // within this class and the BinaryOperator in calcGUI even though they have different types
+            if(curUnaryOperator == null && getBinaryOperator() == null) {
+                String curRes = getDisplayedValue();
+
+                // mathematical expression parser is here
+                setExpressionValue(this.operator.getSymbol() + getDisplayedValue() + ")");
+                Expression expression = new ExpressionBuilder(getExpressionValue()).build();
+                double result = expression.evaluate();
+                pushToExpression("="); //necessary so that the binaryOperator can recognize '=' in expressions
+                //in order to refresh the expression display field.
+                setDisplayedValue(result);
+            } else {
+                setCurUnaryOperator(this.operator);
+                pushToExpression(this.operator.getSymbol());
+            }
+
+//            String value = getDisplayedValue();
+//            operator.setOperand(value);
+//            String result = operator.compute();
+//            setDisplayedValue(result);
         }
     }
 
@@ -440,6 +513,7 @@ public class CalculatorGUI extends JFrame {
         protected String operand;
         protected String symbol;
 
+        //they all had default constructors that were not explicitly shown before
         public UnaryOperator(String symbol) {
             this.symbol = symbol;
         }
@@ -513,7 +587,7 @@ public class CalculatorGUI extends JFrame {
                 booleanOperand = Boolean.parseBoolean(operand);
                 booleanOperandTwo = Boolean.parseBoolean(operandTwo);
             }
-            catch (Exception e) {} // Do nothing. Leave with intial values.
+            catch (Exception e) {} // Do nothing. Leave with initial values.
             return compute(booleanOperand, booleanOperandTwo);
         }
 
@@ -602,7 +676,8 @@ public class CalculatorGUI extends JFrame {
 
     class SquareRootOperator extends NumericUnaryOperator {
         SquareRootOperator () {
-            super((String.valueOf('\u221A')));
+            //super((String.valueOf('\u221A')));
+            super("sqrt(");
         }
         public String compute (double operand) {
             return calculator.sqrt(operand) + "";
@@ -611,7 +686,7 @@ public class CalculatorGUI extends JFrame {
 
     class NaturalLogOperator extends NumericUnaryOperator {
         NaturalLogOperator () {
-            super("ln");
+            super("log(");
         }
         public String compute (double operand) {
             return calculator.ln(operand) + "";
@@ -620,7 +695,7 @@ public class CalculatorGUI extends JFrame {
 
     class CosineOperator extends NumericUnaryOperator {
         CosineOperator () {
-            super("cos");
+            super("cos(");
         }
 
         public String compute (double operand) {
@@ -630,7 +705,7 @@ public class CalculatorGUI extends JFrame {
 
     class SineOperator extends NumericUnaryOperator {
         SineOperator () {
-            super("sin");
+            super("sin(");
         }
 
         public String compute (double operand) {
@@ -640,7 +715,7 @@ public class CalculatorGUI extends JFrame {
 
     class TangentOperator extends NumericUnaryOperator {
         TangentOperator () {
-            super("tan");
+            super("tan(");
         }
 
         public String compute (double operand) {

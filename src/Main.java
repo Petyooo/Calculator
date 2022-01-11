@@ -9,7 +9,7 @@ public class Main {
     }
 
     public static void test() {
-        Expression expression = new ExpressionBuilder("0 + 1").build();
+        Expression expression = new ExpressionBuilder("pi+sqrt(5)").build();
         Expression expression1 = new ExpressionBuilder("1+2/3").build();
 
         double result = expression.evaluate();
