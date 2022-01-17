@@ -40,7 +40,6 @@ public class CalculatorGUI extends JFrame {
 
     private void initGUI () {
         JPanel buttonPanel = new JPanel();
-        JPanel typeOptionPanel = new JPanel();
         JPanel displayPanel = new JPanel();
         setLayout(new BorderLayout());
         buttonPanel.setLayout(new GridLayout(9, 5));
@@ -97,10 +96,6 @@ public class CalculatorGUI extends JFrame {
         JButton not = new JButton("NOT");
         JButton trueButton = new JButton("true");
         JButton falseButton = new JButton("false");
-
-        JRadioButton intType = new JRadioButton("Integer");
-        JRadioButton doubleType = new JRadioButton("Floating Point", true);
-        ButtonGroup typeGroup = new ButtonGroup();
 
         one.addActionListener(new ValueActionListener("1"));
         two.addActionListener(new ValueActionListener("2"));
@@ -241,18 +236,6 @@ public class CalculatorGUI extends JFrame {
             }
         });
 
-        intType.addActionListener(new ActionListener() {
-            public void actionPerformed (ActionEvent ae) {
-                calculateAsInt = true;
-            }
-        });
-
-        doubleType.addActionListener(new ActionListener() {
-            public void actionPerformed (ActionEvent ae) {
-                calculateAsInt = false;
-            }
-        });
-
         // it worked out really well that this is not a UnaryOperator!!
         plusMinus.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
@@ -305,14 +288,6 @@ public class CalculatorGUI extends JFrame {
         buttonPanel.add(toCelcius);
         buttonPanel.add(toFarenheit);
 
-        typeGroup.add(intType);
-        typeGroup.add(doubleType);
-
-        typeOptionPanel.setBorder(new TitledBorder("Calculate As:"));
-        typeOptionPanel.add(intType);
-        typeOptionPanel.add(doubleType);
-
-
         displayPanel.setBorder(BorderFactory.createEtchedBorder());
         displayPanel.add(expressionDisplay);
         displayPanel.add(display);
@@ -320,7 +295,6 @@ public class CalculatorGUI extends JFrame {
         add(displayPanel, BorderLayout.NORTH);
         //add(display, BorderLayout.NORTH);
         add(buttonPanel, BorderLayout.CENTER);
-        add(typeOptionPanel, BorderLayout.SOUTH);
 
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(350, 350);
