@@ -200,13 +200,13 @@ public class CalculatorGUI extends JFrame {
 
         e.addActionListener(new ActionListener () {
             public void actionPerformed (ActionEvent ae) {
-                setDisplayedValue("e");
+                pushValue("e");
             }
         });
 
         pi.addActionListener(new ActionListener () {
             public void actionPerformed (ActionEvent ae) {
-                setDisplayedValue("pi");
+                pushValue("pi");
             }
         });
 
@@ -216,25 +216,28 @@ public class CalculatorGUI extends JFrame {
         equals.addActionListener(new ActionListener() {
             public void actionPerformed (ActionEvent ae) {
                 String operandTwo = getDisplayedValue();
-
-                if (operator == null && curUnaryOperator == null) {
-                    if (operandTwo.equals("pi")) {
-                        setDisplayedValue(calculator.pi());
-                    } else if (operandTwo.equals("e")) {
-                        setDisplayedValue(calculator.e());
-                    } else if (operandTwo.equals(null)){
-                        return;
+                if(!getExpressionValue().contains("=")) {
+                    if (operator == null && curUnaryOperator == null) {
+                        if (operandTwo.equals("pi")) {
+                            setDisplayedValue(calculator.pi());
+                        } else if (operandTwo.equals("e")) {
+                            setDisplayedValue(calculator.e());
+                        } else if (operandTwo.equals(null)) {
+                            return;
+                        }
                     }
-                }
 
-                pushToExpression(operandTwo);
-                Expression expression = new ExpressionBuilder(getExpressionValue()).build();
-                double res = expression.evaluate();
-                pushToExpression("=");
-                setDisplayedValue(res);
-                popOperator();
-                setCurUnaryOperator(null);
-                //pushToExpression(operandTwo);
+                    pushToExpression(operandTwo);
+                    Expression expression = new ExpressionBuilder(getExpressionValue()).build();
+                    double res = expression.evaluate();
+                    pushToExpression("=");
+                    setDisplayedValue(res);
+                    popOperator();
+                    setCurUnaryOperator(null);
+                    //pushToExpression(operandTwo);
+                } else {
+
+                }
             }
         });
 
@@ -382,10 +385,12 @@ public class CalculatorGUI extends JFrame {
     }
 
     protected void pushValue (String value) {
+
         String newText = getDisplayedValue();
 
-        if(newText.contains("=")) {
+        if(getExpressionValue().contains("=")) {
             newText = "";
+            setExpressionValue("");
         }
 
         /* Prevent leading zeros. */
